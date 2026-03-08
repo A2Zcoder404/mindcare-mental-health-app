@@ -382,6 +382,106 @@ a {
     background-color: #10b981;
 }
 
+/* --- How it Works Section --- */
+.how-it-works {
+    padding: var(--spacing-xl) 0;
+    background-color: var(--bg-main);
+    position: relative;
+}
+
+.how-it-works::before {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    left: -5%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, var(--primary-light) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+.how-it-works .container {
+    position: relative;
+    z-index: 1;
+}
+
+.steps-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.step-card {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    padding: 0 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.step-card:hover {
+    transform: translateY(-5px);
+}
+
+.step-number {
+    width: 64px;
+    height: 64px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 auto 1.5rem;
+    box-shadow: var(--shadow-glow);
+    position: relative;
+    z-index: 2;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.step-card:hover .step-number {
+    transform: scale(1.1);
+}
+
+.step-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.step-description {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+
+.step-line {
+    flex: 0 0 calc(15%);
+    height: 2px;
+    background-color: #e2e8f0;
+    margin-top: 32px;
+    position: relative;
+}
+
+.step-line::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 6px solid #e2e8f0;
+}
+
 /* --- Features Section --- */
 .features {
     padding: var(--spacing-xl) 0;
@@ -573,6 +673,21 @@ a {
     
     .menu-toggle {
         display: block;
+    }
+    
+    .steps-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 3rem;
+    }
+    
+    .step-line {
+        display: none;
+    }
+    
+    .step-card {
+        padding: 0;
+        max-width: 400px;
     }
     
     .features-grid {
