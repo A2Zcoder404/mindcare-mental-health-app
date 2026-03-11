@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindCare | Complete Profile</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/auth.css">
+</head>
+
+<body class="auth-page" data-wait-for-data="true">
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <div class="auth-wrapper center-layout">
+
+        <div class="auth-container centered-card">
+
+            <a href="index.html" class="logo auth-logo-center">
+                <div class="logo-icon"><i class="ri-heart-pulse-line"></i></div>
+                <span>MindCare</span>
+            </a>
+
+            <!-- Onboarding Form -->
+            <div class="auth-form-box active" id="onboarding-form">
+                <h2>Complete Your Profile</h2>
+                <p class="auth-subtitle">Tell us a bit about yourself so we can personalize your experience.</p>
+
+                <form id="onboarding-form-element">
+                    <div class="form-group">
+                        <label for="ob-name">Full Name</label>
+                        <input type="text" id="ob-name" class="form-control" placeholder="e.g. Jane Doe" required>
+                    </div>
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="ob-dob">Date of Birth</label>
+                        <input type="date" id="ob-dob" class="form-control" required>
+                    </div>
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="ob-gender">Gender</label>
+                        <select id="ob-gender" class="form-control" required>
+                            <option value="" disabled selected>Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Non-binary">Non-binary</option>
+                            <option value="Prefer not to say">Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="ob-occupation">Occupation</label>
+                        <input type="text" id="ob-occupation" class="form-control" placeholder="e.g. Software Engineer"
+                            required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block auth-submit-btn"
+                        style="margin-top: 2rem;">Save & Continue</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script/script.js"></script>
+    <script type="module" src="script/auth-state.js"></script>
+    <script type="module">
+        import { auth, db } from './script/firebase-config.js';
+        import { onAuthStateChanged } from 'firebase/auth';
+        import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const obForm = document.getElementById('onboarding-form-element');
+            let currentUser = null;
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    // Pre-fill user data
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
+                        if (userDoc.exists()) {
+                            const data = userDoc.data();
+                            if (data.onboardingComplete) {
+                                window.location.href = 'index.html'; // Already onboarded
+                            }
+                            if (data.fullName) {
+                                document.getElementById('ob-name').value = data.fullName;
+                            } else if (user.displayName) {
+                                document.getElementById('ob-name').value = user.displayName;
+                            }
+                        } else if (user.displayName) {
+                            document.getElementById('ob-name').value = user.displayName;
+                        }
+                    } catch (e) {
+                        console.error("Error fetching user data:", e);
+                    }
+                    if (window.hideLoader) window.hideLoader();
+                } else {
+                    window.location.href = 'login.html'; // Not logged in
+                }
+            });
+
+            obForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!currentUser) return;
+
+                const name = document.getElementById('ob-name').value;
+                const dob = document.getElementById('ob-dob').value;
+                const gender = document.getElementById('ob-gender').value;
+                const occupation = document.getElementById('ob-occupation').value;
+
+                // Calculate Age
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                try {
+                    const btn = obForm.querySelector('button[type="submit"]');
+                    btn.textContent = 'Saving...';
+                    btn.disabled = true;
+
+                    await setDoc(doc(db, 'users', currentUser.uid), {
+                        fullName: name,
+                        dob: dob,
+                        age: age,
+                        gender: gender,
+                        occupation: occupation,
+                        onboardingComplete: true
+                    }, { merge: true });
+
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error("Error updating profile:", error);
+                    alert("Failed to save profile. Please try again.");
+                    const btn = obForm.querySelector('button[type="submit"]');
+                    btn.textContent = 'Save & Continue';
+                    btn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

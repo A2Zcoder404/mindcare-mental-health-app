@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindCare | My Profile</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style/style.css">
+    <style>
+        .profile-section {
+            padding: 8rem 0 4rem 0;
+            min-height: 80vh;
+        }
+
+        .profile-card {
+            background-color: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            box-shadow: var(--shadow-md);
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        .profile-name {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-email {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .profile-details {
+            text-align: left;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--light-gray);
+            border-radius: var(--radius-md);
+        }
+
+        .detail-item {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .detail-item:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .detail-value {
+            color: var(--text-muted);
+        }
+
+        /* Edit Form overrides */
+        #edit-profile-form {
+            text-align: left;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        /* Avatar Picker Modal */
+        .avatar-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .avatar-modal-content {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .avatar-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .avatar-option {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform 0.2s;
+            background-color: var(--primary-light);
+        }
+
+        .avatar-option:hover {
+            transform: scale(1.1);
+            border-color: var(--primary-color);
+        }
+
+        .profile-avatar {
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-avatar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .profile-avatar:hover .profile-avatar-overlay {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body data-wait-for-data="true">
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon"><i class="ri-heart-pulse-line"></i></div>
+                <span>MindCare</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="how-it-works.html" class="nav-link">Process</a>
+                <a href="therapists.html" class="nav-link">Therapist</a>
+                <a href="faqs.html" class="nav-link">FAQ</a>
+            </div>
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-outline">Log In</a>
+                <a href="signup.html" class="btn btn-primary">Sign Up</a>
+            </div>
+            <button class="menu-toggle" aria-label="Toggle Menu">
+                <i class="ri-menu-line"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main>
+        <section class="profile-section">
+            <div class="container">
+                <div class="profile-card">
+                    <div class="profile-avatar" id="profile-avatar-btn">
+                        <img id="current-avatar-img"
+                            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=e2e8f0"
+                            alt="Avatar">
+                        <div class="profile-avatar-overlay">
+                            <i class="ri-camera-fill" style="font-size: 1.5rem; margin-bottom: 0.2rem;"></i>
+                            <span>Change</span>
+                        </div>
+                    </div>
+                    <h1 class="profile-name" id="user-name">Loading...</h1>
+                    <p class="profile-email" id="user-email">Loading...</p>
+
+                    <div class="profile-details" id="profile-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Age</span>
+                            <span class="detail-value" id="user-age">N/A</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Gender</span>
+                            <span class="detail-value" id="user-gender">N/A</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Occupation</span>
+                            <span class="detail-value" id="user-occupation">N/A</span>
+                        </div>
+                    </div>
+
+                    <div id="action-buttons">
+                        <button id="edit-profile-btn" class="btn btn-primary" style="margin-right: 0.5rem;">Edit
+                            Profile</button>
+                        <button id="logout-btn-profile" class="btn btn-outline">Log Out</button>
+                    </div>
+
+                    <form id="edit-profile-form" style="display: none;">
+                        <h3 style="margin-bottom: 1.5rem;">Edit Profile</h3>
+                        <div class="form-group">
+                            <label for="edit-name">Full Name</label>
+                            <input type="text" id="edit-name" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="edit-dob">Date of Birth</label>
+                            <input type="date" id="edit-dob" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="edit-gender">Gender</label>
+                            <select id="edit-gender" class="form-control" required>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Non-binary">Non-binary</option>
+                                <option value="Prefer not to say">Prefer not to say</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="edit-occupation">Occupation</label>
+                            <input type="text" id="edit-occupation" class="form-control" required>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+                            <button type="button" id="cancel-edit-btn" class="btn btn-outline"
+                                style="flex: 1;">Cancel</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Avatar Selection Modal -->
+        <div class="avatar-modal" id="avatar-modal">
+            <div class="avatar-modal-content">
+                <h3 style="margin-bottom: 0.5rem;">Select an Avatar</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Choose your favored identity</p>
+                <div class="avatar-grid" id="avatar-grid"></div>
+                <button class="btn btn-outline" id="close-avatar-modal"
+                    style="margin-top: 1rem; width: 100%;">Cancel</button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="script/script.js"></script>
+    <script type="module" src="script/auth-state.js"></script>
+    <script type="module">
+        import { auth, db } from './script/firebase-config.js';
+        import { onAuthStateChanged, signOut } from 'firebase/auth';
+        import { doc, getDoc, updateDoc } from 'firebase/firestore';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const logoutBtn = document.getElementById('logout-btn-profile');
+            const editBtn = document.getElementById('edit-profile-btn');
+            const cancelBtn = document.getElementById('cancel-edit-btn');
+
+            const profileDetails = document.getElementById('profile-details');
+            const actionButtons = document.getElementById('action-buttons');
+            const editForm = document.getElementById('edit-profile-form');
+
+            const avatarModal = document.getElementById('avatar-modal');
+            const avatarGrid = document.getElementById('avatar-grid');
+            const profileAvatarBtn = document.getElementById('profile-avatar-btn');
+            const closeAvatarModalBtn = document.getElementById('close-avatar-modal');
+            const currentAvatarImg = document.getElementById('current-avatar-img');
+
+            let currentUser = null;
+            let currentData = null;
+
+            // Generate Avatar Presets
+            const presetSeeds = ['Felix', 'Aneka', 'Oliver', 'Mimi', 'Bella', 'Jasper', 'Max', 'Luna'];
+            presetSeeds.forEach(seed => {
+                const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=e2e8f0`;
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'avatar-option';
+                img.addEventListener('click', async () => {
+                    if (!currentUser) return;
+                    try {
+                        img.style.opacity = '0.5';
+                        await updateDoc(doc(db, 'users', currentUser.uid), { avatarUrl: url });
+                        currentAvatarImg.src = url;
+                        if (currentData) currentData.avatarUrl = url;
+                        avatarModal.style.display = 'none';
+                    } catch (err) {
+                        console.error("Error setting avatar:", err);
+                        alert("Failed to update avatar.");
+                    } finally {
+                        img.style.opacity = '1';
+                    }
+                });
+                avatarGrid.appendChild(img);
+            });
+
+            profileAvatarBtn.addEventListener('click', () => { avatarModal.style.display = 'flex'; });
+            closeAvatarModalBtn.addEventListener('click', () => { avatarModal.style.display = 'none'; });
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await signOut(auth);
+                    window.location.href = 'index.html';
+                });
+            }
+
+            // Toggle Edit mode
+            editBtn.addEventListener('click', () => {
+                profileDetails.style.display = 'none';
+                actionButtons.style.display = 'none';
+                editForm.style.display = 'block';
+
+                if (currentData) {
+                    document.getElementById('edit-name').value = currentData.fullName || '';
+                    document.getElementById('edit-dob').value = currentData.dob || '';
+                    document.getElementById('edit-gender').value = currentData.gender || 'Prefer not to say';
+                    document.getElementById('edit-occupation').value = currentData.occupation || '';
+                }
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                profileDetails.style.display = 'block';
+                actionButtons.style.display = 'block';
+                editForm.style.display = 'none';
+            });
+
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!currentUser) return;
+
+                const submitBtn = editForm.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Saving...';
+                submitBtn.disabled = true;
+
+                const name = document.getElementById('edit-name').value;
+                const dob = document.getElementById('edit-dob').value;
+                const gender = document.getElementById('edit-gender').value;
+                const occupation = document.getElementById('edit-occupation').value;
+
+                // Calculate Age
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                try {
+                    await updateDoc(doc(db, 'users', currentUser.uid), {
+                        fullName: name,
+                        dob: dob,
+                        age: age,
+                        gender: gender,
+                        occupation: occupation
+                    });
+
+                    // Update local UI
+                    document.getElementById('user-name').textContent = name || 'MindCare User';
+                    document.getElementById('user-age').textContent = age || 'N/A';
+                    document.getElementById('user-gender').textContent = gender || 'N/A';
+                    document.getElementById('user-occupation').textContent = occupation || 'N/A';
+
+                    // Update current data map
+                    currentData.fullName = name;
+                    currentData.dob = dob;
+                    currentData.age = age;
+                    currentData.gender = gender;
+                    currentData.occupation = occupation;
+
+                    // Switch back to view mode
+                    cancelBtn.click();
+                } catch (error) {
+                    console.error("Error updating profile:", error);
+                    alert("Failed to update profile.");
+                } finally {
+                    submitBtn.textContent = 'Save Changes';
+                    submitBtn.disabled = false;
+                }
+            });
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('user-email').textContent = user.email;
+
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
+                        if (userDoc.exists()) {
+                            currentData = userDoc.data();
+                            document.getElementById('user-name').textContent = currentData.fullName || user.displayName || 'MindCare User';
+                            document.getElementById('user-age').textContent = currentData.age || 'N/A';
+                            document.getElementById('user-gender').textContent = currentData.gender || 'N/A';
+                            document.getElementById('user-occupation').textContent = currentData.occupation || 'N/A';
+
+                            if (currentData.avatarUrl) {
+                                currentAvatarImg.src = currentData.avatarUrl;
+                            }
+                        } else {
+                            document.getElementById('user-name').textContent = user.displayName || 'MindCare User';
+                        }
+                    } catch (e) {
+                        document.getElementById('user-name').textContent = user.displayName || 'MindCare User';
+                    }
+
+                    // Hide global loader once data is populated
+                    if (window.hideLoader) window.hideLoader();
+                } else {
+                    // Not logged in, redirect
+                    window.location.href = 'login.html';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindCare | Login</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/auth.css">
+</head>
+
+<body class="auth-page">
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <div class="auth-wrapper center-layout">
+        <a href="index.html" class="back-link"><i class="ri-arrow-left-line"></i> Back to Home</a>
+
+        <div class="auth-container centered-card">
+
+            <a href="index.html" class="logo auth-logo-center">
+                <div class="logo-icon"><i class="ri-heart-pulse-line"></i></div>
+                <span>MindCare</span>
+            </a>
+
+            <!-- Login Form -->
+            <div class="auth-form-box active" id="login-form">
+                <h2>Welcome back</h2>
+                <p class="auth-subtitle">Log in to MindCare and continue your journey.</p>
+
+                <button type="button" class="btn btn-social" id="google-login-btn">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
+                    Continue with Google
+                </button>
+
+                <div class="divider">
+                    <span>or log in with email</span>
+                </div>
+
+                <form id="login-form-element">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="Enter your email"
+                            required>
+                    </div>
+                    <div class="form-group" style="margin-top: 2rem;">
+                        <div class="label-row">
+                            <label for="login-password">Password</label>
+                            <a href="#" class="forgot-link">Forgot password?</a>
+                        </div>
+                        <div class="password-input">
+                            <input type="password" id="login-password" class="form-control"
+                                placeholder="Enter your password" required>
+                            <button type="button" class="toggle-password"><i class="ri-eye-off-line"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block auth-submit-btn">Log In</button>
+                </form>
+
+                <p class="auth-switch">Don't have an account? <a href="signup.html">Sign up</a></p>
+            </div>
+
+            <!-- Verification Waiting UI -->
+            <div class="auth-form-box text-center" id="verification-wait" style="display: none; padding: 2rem 0;">
+                <div class="verification-icon">
+                    <i class="ri-mail-send-line"></i>
+                </div>
+                <h2 style="margin-bottom: 1rem;">Check your inbox</h2>
+                <p class="auth-subtitle" style="margin-bottom: 2.5rem; max-width: 400px; margin-inline: auto;">
+                    We sent a verification link to your email. Please click the link to verify your account.
+                </p>
+
+                <button type="button" class="btn btn-outline btn-block" id="resend-verification-btn" style="margin-bottom: 2rem;">
+                    Resend Link
+                </button>
+
+                <div class="waiting-status" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
+                    Waiting for verification... <i class="ri-loader-4-line ri-spin"></i>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module" src="script/script.js"></script>
+    <script type="module" src="script/auth.js"></script>
+</body>
+
+</html>

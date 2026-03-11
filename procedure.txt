@@ -1,0 +1,29 @@
+Backend Implementation Procedure
+
+Based on the frontend logic and user interface components (such as assessment flow and authentication pages), here is the step-by-step procedure for building the backend using Firebase:
+
+1. Project Setup
+- Initialize the Node.js project or frontend build tool (e.g., Vite/Webpack) to handle environment variables securely via `.env`.
+- Install the Firebase JS SDK: `npm install firebase`.
+
+2. Environment Configuration
+- Create a `.env` file at the root of the project to store sensitive configuration variables securely from Firebase Config (apiKey, authDomain, projectId, etc.).
+- Ensure `.env` is added to `.gitignore`.
+
+3. Firebase Initialization
+- Create a dedicated file (e.g., `script/firebase-config.js`) to initialize the Firebase App and export Auth and Firestore instances.
+- Load the configuration from the environment variables configured in Step 2.
+
+4. Authentication Implementation (Reference: `auth.html`, `auth.js`)
+- **Email/Password Signup**: Implement Firebase `createUserWithEmailAndPassword` when the user submits the signup form.
+- **Email/Password Login**: Implement Firebase `signInWithEmailAndPassword` when the user submits the login form.
+- **Google Authentication**: Implement `signInWithPopup` using GoogleAuthProvider to allow users to sign up/in instantly with their Google accounts.
+- **Auth State Listener**: Utilize `onAuthStateChanged` to manage session persistence, redirecting authenticated users away from `auth.html` to a dashboard/home and unauthenticated users to the login screen when accessing protected routes.
+
+5. Database (Firestore) Implementation
+- **User Profiles**: On successful registration, create a Firestore document under a `users` collection with the UID as the document ID containing basic info (e.g., name, email, createdAt).
+- **Assessment Data**: (Reference: Assessment flow in `script.js`) Capture the state of the multi-step assessment form. On completion, store the assessment answers in Firestore under a subcollection or related document linked to the user's UID. This data will be used later for matching with a therapist.
+
+6. Deployment & Security Rules
+- Configure Firestore Security Rules to ensure users can only read/write their own data (`request.auth.uid == resource.data.userId`).
+- Deploy the frontend via Firebase Hosting or another provider, ensuring environment variables are securely injected during the build step.
