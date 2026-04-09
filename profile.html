@@ -13,6 +13,7 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/therapist-apply.css">
     <style>
         .profile-section {
             padding: 8rem 0 4rem 0;
@@ -215,6 +216,22 @@
                     </div>
                     <h1 class="profile-name" id="user-name">Loading...</h1>
                     <p class="profile-email" id="user-email">Loading...</p>
+
+                    <!-- Therapist Badge & Tag (shown dynamically) -->
+                    <div id="therapist-badge-container" style="display:none; margin-bottom: 1rem;">
+                        <span class="profile-therapist-badge badge-verified" id="therapist-badge">
+                            <i class="ri-verified-badge-fill"></i> Verified Therapist
+                        </span>
+                        <br>
+                        <span class="profile-therapist-tag" id="therapist-tag">
+                            <i class="ri-stethoscope-line"></i> Licensed Therapist
+                        </span>
+                    </div>
+                    <div id="therapist-pending-container" style="display:none; margin-bottom: 1rem;">
+                        <span class="profile-therapist-badge badge-pending" id="therapist-pending-badge">
+                            <i class="ri-time-line"></i> Verification Pending
+                        </span>
+                    </div>
 
                     <div class="profile-details" id="profile-details">
                         <div class="detail-item">
@@ -434,6 +451,28 @@
 
                             if (currentData.avatarUrl) {
                                 currentAvatarImg.src = currentData.avatarUrl;
+                            }
+
+                            // --- Therapist Badge Logic ---
+                            const badgeContainer = document.getElementById('therapist-badge-container');
+                            const pendingContainer = document.getElementById('therapist-pending-container');
+                            const therapistStatus = currentData.therapistStatus;
+
+                            if (therapistStatus === 'approved') {
+                                badgeContainer.style.display = 'block';
+                                // Fetch specialty from application for the tag
+                                try {
+                                    const appDoc = await getDoc(doc(db, 'therapistApplications', user.uid));
+                                    if (appDoc.exists()) {
+                                        const appData = appDoc.data();
+                                        const tagEl = document.getElementById('therapist-tag');
+                                        if (appData.licenseType) {
+                                            tagEl.innerHTML = `<i class="ri-stethoscope-line"></i> ${appData.licenseType}`;
+                                        }
+                                    }
+                                } catch (e) { /* ignore */ }
+                            } else if (therapistStatus === 'pending') {
+                                pendingContainer.style.display = 'block';
                             }
                         } else {
                             document.getElementById('user-name').textContent = user.displayName || 'MindCare User';
