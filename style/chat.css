@@ -404,15 +404,25 @@
     border-bottom-left-radius: 0.3rem;
 }
 
-.msg-time {
-    font-size: 0.65rem;
-    opacity: 0.6;
-    margin-top: 0.3rem;
-    display: block;
+.msg-body {
+    word-wrap: break-word;
 }
 
-.msg-sent .msg-time {
-    text-align: right;
+.msg-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+}
+
+.msg-received .msg-meta {
+    justify-content: flex-start;
+}
+
+.msg-time {
+    font-size: 0.65rem;
+    opacity: 0.8;
 }
 
 .msg-date-divider {
@@ -440,6 +450,77 @@
     right: 0;
     height: 1px;
     background-color: #e2e8f0;
+}
+
+/* Reply Preview Bar */
+.reply-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f8fafc;
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid var(--primary-color);
+}
+
+.reply-preview-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.reply-preview-content span {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.1rem;
+}
+
+.reply-preview-content p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#reply-preview-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+#reply-preview-close:hover {
+    background-color: #e2e8f0;
+    color: var(--text-main);
+}
+
+/* Quoted message in bubble */
+.msg-quote {
+    background: rgba(0,0,0,0.06);
+    border-left: 3px solid rgba(0,0,0,0.15);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    margin-bottom: 0.4rem;
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.msg-sent .msg-quote {
+    background: rgba(255,255,255,0.15);
+    border-left-color: rgba(255,255,255,0.4);
+}
+
+.msg-quote-name {
+    font-weight: 700;
+    font-size: 0.7rem;
+    margin-bottom: 0.1rem;
 }
 
 /* System message for client info sharing */
@@ -820,4 +901,181 @@
     margin-top: 0.4rem;
     font-weight: 600;
     min-height: 1.2em;
+}
+
+/* ================================================
+   DELETE BUTTON & CONTEXT MENU & CONFIRM MODAL
+   ================================================ */
+
+/* Delete Chat Button (header) */
+.chat-delete-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+
+.chat-delete-btn:hover {
+    background-color: #fef2f2;
+    color: #ef4444;
+    transform: scale(1.08);
+}
+
+/* Context Menu */
+.msg-context-menu {
+    position: fixed;
+    z-index: 200;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    padding: 0.35rem;
+    min-width: 180px;
+    opacity: 0;
+    transform: scale(0.92) translateY(-4px);
+    pointer-events: none;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.msg-context-menu.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+}
+
+.ctx-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: none;
+    background: none;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.15s;
+    color: var(--text-main);
+}
+
+.ctx-menu-item i {
+    font-size: 1.1rem;
+}
+
+.ctx-menu-item:hover {
+    background-color: #f1f5f9;
+}
+
+.ctx-menu-item.ctx-danger {
+    color: #ef4444;
+}
+
+.ctx-menu-item.ctx-danger:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+/* Confirmation Modal */
+.confirm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeInOverlay 0.2s ease;
+}
+
+.confirm-modal {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 2rem 2rem 1.75rem;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    animation: modalSlideIn 0.3s ease;
+}
+
+.confirm-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fef2f2, #fecaca);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+}
+
+.confirm-modal-icon i {
+    font-size: 1.75rem;
+    color: #ef4444;
+}
+
+.confirm-modal h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.confirm-modal p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.confirm-modal-actions .btn {
+    flex: 1;
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    font-size: 0.88rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    box-shadow: 0 4px 14px -3px rgba(239, 68, 68, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Long-press hint for conversation items */
+.conv-item {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Hover delete hint on sent messages */
+.msg-sent {
+    cursor: context-menu;
 }

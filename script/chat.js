@@ -1,8 +1,8 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import {
-    collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
-    query, where, orderBy, onSnapshot, serverTimestamp, limit
+    collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
+    query, where, orderBy, onSnapshot, serverTimestamp, limit, writeBatch
 } from 'firebase/firestore';
 
 // =============================================
@@ -29,6 +29,21 @@ const sidebarAvatar = document.getElementById('sidebar-avatar');
 const sidebarName = document.getElementById('sidebar-name');
 const chatSidebar = document.getElementById('chat-sidebar');
 const sidebarOverlay = document.getElementById('chat-sidebar-overlay');
+const chatDeleteBtn = document.getElementById('chat-delete-btn');
+const confirmModal = document.getElementById('confirm-modal');
+const confirmTitle = document.getElementById('confirm-title');
+const confirmText = document.getElementById('confirm-text');
+const confirmCancel = document.getElementById('confirm-cancel');
+const confirmOk = document.getElementById('confirm-ok');
+const msgContextMenu = document.getElementById('msg-context-menu');
+const ctxDeleteMsg = document.getElementById('ctx-delete-msg');
+const ctxReplyMsg = document.getElementById('ctx-reply-msg');
+const replyPreview = document.getElementById('reply-preview');
+const replyPreviewName = document.getElementById('reply-preview-name');
+const replyPreviewText = document.getElementById('reply-preview-text');
+const replyPreviewClose = document.getElementById('reply-preview-close');
+
+let activeReplyData = null;
 
 let currentUser = null;
 let currentUserData = null;
@@ -182,6 +197,7 @@ function renderConversationList(searchTerm = '') {
             <span class="conv-time">${timeStr}</span>
         `;
         div.addEventListener('click', () => openConversation(conv));
+        attachConvContextMenu(div, conv);
         convList.appendChild(div);
     });
 }
@@ -495,6 +511,9 @@ function loadMessages(convId) {
             chatMessages.innerHTML = '';
             let lastDate = '';
 
+            const existingMsgIds = new Set();
+            snapshot.docs.forEach(d => existingMsgIds.add(d.id));
+
             snapshot.docs.forEach(msgDoc => {
                 const msg = msgDoc.data();
                 const msgDate = formatDate(msg.timestamp);
@@ -516,10 +535,33 @@ function loadMessages(convId) {
                 } else {
                     const isSent = msg.senderId === currentUser.uid;
                     el.className = `msg-bubble ${isSent ? 'msg-sent' : 'msg-received'}`;
+                    el.dataset.msgId = msgDoc.id;
+                    el.dataset.senderId = msg.senderId;
+
+                    let quoteHtml = '';
+                    if (msg.replyTo && existingMsgIds.has(msg.replyTo.id)) {
+                        quoteHtml = `
+                            <div class="msg-quote">
+                                <div class="msg-quote-name">${escapeHtml(msg.replyTo.name)}</div>
+                                <div class="msg-quote-text">${escapeHtml(msg.replyTo.text)}</div>
+                            </div>
+                        `;
+                    }
+
                     el.innerHTML = `
-                        ${escapeHtml(msg.text)}
-                        <span class="msg-time">${formatTime(msg.timestamp)}</span>
+                        ${quoteHtml}
+                        <div class="msg-body">${escapeHtml(msg.text)}</div>
+                        <div class="msg-meta">
+                            <span class="msg-time">${formatTime(msg.timestamp)}</span>
+                        </div>
                     `;
+
+                    // Context menu on ALL messages
+                    el.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        const senderName = isSent ? (currentUserData?.fullName || 'Me') : chatHeaderName.textContent;
+                        showMsgContextMenu(e, msgDoc.id, isSent, msg.text, senderName);
+                    });
                 }
 
                 chatMessages.appendChild(el);
@@ -546,12 +588,22 @@ async function sendMessage() {
     chatInput.style.height = 'auto';
 
     try {
-        // Add message to subcollection
-        await addDoc(collection(db, 'conversations', currentConvId, 'messages'), {
+        const msgData = {
             senderId: currentUser.uid,
             text: text,
             timestamp: serverTimestamp()
-        });
+        };
+
+        if (activeReplyData) {
+            msgData.replyTo = activeReplyData;
+        }
+
+        // Add message to subcollection
+        await addDoc(collection(db, 'conversations', currentConvId, 'messages'), msgData);
+
+        // Clear reply state
+        activeReplyData = null;
+        replyPreview.style.display = 'none';
 
         // Update conversation's last message
         await updateDoc(doc(db, 'conversations', currentConvId), {
@@ -612,6 +664,235 @@ function handleMobileLayout() {
     if (window.innerWidth <= 768 && !currentConvId) {
         chatSidebar.classList.add('open');
     }
+}
+
+// =============================================
+//  DELETE CHAT (entire conversation)
+// =============================================
+let pendingConfirmAction = null;
+
+function showConfirm(title, text, onConfirm) {
+    confirmTitle.textContent = title;
+    confirmText.textContent = text;
+    pendingConfirmAction = onConfirm;
+    confirmModal.style.display = 'flex';
+}
+
+confirmCancel?.addEventListener('click', () => {
+    confirmModal.style.display = 'none';
+    pendingConfirmAction = null;
+});
+
+confirmModal?.addEventListener('click', (e) => {
+    if (e.target === confirmModal) {
+        confirmModal.style.display = 'none';
+        pendingConfirmAction = null;
+    }
+});
+
+confirmOk?.addEventListener('click', async () => {
+    if (pendingConfirmAction) {
+        confirmOk.textContent = 'Deleting...';
+        confirmOk.disabled = true;
+        await pendingConfirmAction();
+        confirmOk.textContent = 'Delete';
+        confirmOk.disabled = false;
+        confirmModal.style.display = 'none';
+        pendingConfirmAction = null;
+    }
+});
+
+chatDeleteBtn?.addEventListener('click', () => {
+    if (!currentConvId) return;
+    showConfirm(
+        'Delete Conversation',
+        'Are you sure you want to delete this entire conversation? This action cannot be undone.',
+        deleteCurrentConversation
+    );
+});
+
+async function deleteCurrentConversation() {
+    if (!currentConvId) return;
+
+    try {
+        // 1. Delete all messages in subcollection
+        const msgsSnap = await getDocs(collection(db, 'conversations', currentConvId, 'messages'));
+        const batch = writeBatch(db);
+        msgsSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+
+        // 2. Delete the conversation document
+        await deleteDoc(doc(db, 'conversations', currentConvId));
+
+        // 3. Unsubscribe message listener
+        if (messageUnsub) { messageUnsub(); messageUnsub = null; }
+
+        // 4. Remove from local list
+        conversations = conversations.filter(c => c.id !== currentConvId);
+        currentConvId = null;
+        currentTherapistUid = null;
+
+        // 5. Reset UI
+        chatActive.style.display = 'none';
+        chatEmpty.style.display = 'flex';
+        renderConversationList();
+    } catch (e) {
+        console.error('Error deleting conversation:', e);
+        alert('Failed to delete conversation. Please try again.');
+    }
+}
+
+// =============================================
+//  DELETE & REPLY INDIVIDUAL MESSAGE
+// =============================================
+let contextMenuMsgId = null;
+
+function showMsgContextMenu(e, msgId, isSent, msgText, senderName) {
+    contextMenuMsgId = msgId;
+
+    // Show/hide delete button based on ownership
+    ctxDeleteMsg.style.display = isSent ? 'flex' : 'none';
+
+    // Store reply metadata temporarily
+    ctxReplyMsg.dataset.msgId = msgId;
+    ctxReplyMsg.dataset.text = msgText;
+    ctxReplyMsg.dataset.name = senderName;
+
+    // Calculate dimensions before showing (offsetWidth ignores transform scaling)
+    msgContextMenu.classList.remove('visible');
+    
+    const menuWidth = msgContextMenu.offsetWidth || 180;
+    // The height might change based on reply/delete visibility, so we use scrollHeight or a fallback
+    const menuHeight = msgContextMenu.scrollHeight || 100;
+
+    const clientWidth = document.documentElement.clientWidth || window.innerWidth;
+    const clientHeight = document.documentElement.clientHeight || window.innerHeight;
+
+    let left = e.clientX;
+    let top = e.clientY;
+
+    if (left + menuWidth > clientWidth) {
+        left = clientWidth - menuWidth - 12;
+    }
+    if (top + menuHeight > clientHeight) {
+        top = clientHeight - menuHeight - 12;
+    }
+
+    msgContextMenu.style.top = top + 'px';
+    msgContextMenu.style.left = left + 'px';
+    
+    // Use requestAnimationFrame to ensure the new position is applied before transition
+    requestAnimationFrame(() => {
+        msgContextMenu.classList.add('visible');
+    });
+}
+
+// Hide context menu on click outside
+document.addEventListener('click', () => {
+    msgContextMenu?.classList.remove('visible');
+    contextMenuMsgId = null;
+});
+
+ctxReplyMsg?.addEventListener('click', () => {
+    if (!contextMenuMsgId) return;
+
+    activeReplyData = {
+        id: ctxReplyMsg.dataset.msgId,
+        text: ctxReplyMsg.dataset.text,
+        name: ctxReplyMsg.dataset.name
+    };
+
+    replyPreviewName.textContent = activeReplyData.name;
+    replyPreviewText.textContent = activeReplyData.text;
+    replyPreview.style.display = 'flex';
+    msgContextMenu.classList.remove('visible');
+    chatInput.focus();
+});
+
+replyPreviewClose?.addEventListener('click', () => {
+    activeReplyData = null;
+    replyPreview.style.display = 'none';
+});
+
+ctxDeleteMsg?.addEventListener('click', () => {
+    if (!contextMenuMsgId || !currentConvId) return;
+    const msgIdToDelete = contextMenuMsgId;
+    msgContextMenu.classList.remove('visible');
+    showConfirm(
+        'Delete Message',
+        'Are you sure you want to delete this message? This cannot be undone.',
+        () => deleteSingleMessage(msgIdToDelete)
+    );
+});
+
+async function deleteSingleMessage(msgId) {
+    if (!currentConvId || !msgId) return;
+
+    try {
+        await deleteDoc(doc(db, 'conversations', currentConvId, 'messages', msgId));
+
+        // Update the conversation's lastMessage to the previous message
+        const msgsSnap = await getDocs(
+            query(
+                collection(db, 'conversations', currentConvId, 'messages'),
+                orderBy('timestamp', 'desc'),
+                limit(1)
+            )
+        );
+
+        if (msgsSnap.empty) {
+            await updateDoc(doc(db, 'conversations', currentConvId), {
+                lastMessage: 'Conversation started',
+                lastMessageAt: serverTimestamp()
+            });
+        } else {
+            const lastMsg = msgsSnap.docs[0].data();
+            await updateDoc(doc(db, 'conversations', currentConvId), {
+                lastMessage: lastMsg.text || 'Conversation started',
+                lastMessageAt: lastMsg.timestamp || serverTimestamp()
+            });
+        }
+    } catch (e) {
+        console.error('Error deleting message:', e);
+        alert('Failed to delete message. Please try again.');
+    }
+}
+
+// =============================================
+//  DELETE CONVERSATION FROM SIDEBAR (long-press / right-click)
+// =============================================
+function attachConvContextMenu(div, conv) {
+    div.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showConfirm(
+            'Delete Conversation',
+            'Are you sure you want to delete this entire conversation? This cannot be undone.',
+            async () => {
+                // If this conversation is currently open, clean up
+                if (currentConvId === conv.id) {
+                    if (messageUnsub) { messageUnsub(); messageUnsub = null; }
+                    currentConvId = null;
+                    currentTherapistUid = null;
+                    chatActive.style.display = 'none';
+                    chatEmpty.style.display = 'flex';
+                }
+
+                try {
+                    const msgsSnap = await getDocs(collection(db, 'conversations', conv.id, 'messages'));
+                    const batch = writeBatch(db);
+                    msgsSnap.docs.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                    await deleteDoc(doc(db, 'conversations', conv.id));
+
+                    conversations = conversations.filter(c => c.id !== conv.id);
+                    renderConversationList();
+                } catch (err) {
+                    console.error('Error deleting conversation:', err);
+                    alert('Failed to delete conversation.');
+                }
+            }
+        );
+    });
 }
 window.addEventListener('resize', handleMobileLayout);
 handleMobileLayout();

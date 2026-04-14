@@ -78,6 +78,9 @@
                     <button class="chat-info-toggle" id="chat-info-toggle" title="View client/therapist info">
                         <i class="ri-information-line"></i>
                     </button>
+                    <button class="chat-delete-btn" id="chat-delete-btn" title="Delete conversation">
+                        <i class="ri-delete-bin-6-line"></i>
+                    </button>
                     <button class="chat-rate-btn" id="chat-rate-btn" title="Rate this therapist" style="display:none;">
                         <i class="ri-star-line"></i>
                     </button>
@@ -105,6 +108,13 @@
 
                 <!-- Chat Input -->
                 <div class="chat-input-area">
+                    <div class="reply-preview" id="reply-preview" style="display:none;">
+                        <div class="reply-preview-content">
+                            <span id="reply-preview-name">Name</span>
+                            <p id="reply-preview-text">Message text...</p>
+                        </div>
+                        <button id="reply-preview-close"><i class="ri-close-line"></i></button>
+                    </div>
                     <div class="chat-input-wrapper">
                         <textarea id="chat-input" placeholder="Type your message..." rows="1"></textarea>
                         <button class="chat-send-btn" id="chat-send-btn" title="Send message">
@@ -137,6 +147,29 @@
                 <button class="btn btn-primary" id="rating-submit" style="flex:1;" disabled>Submit Rating</button>
             </div>
         </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirm-modal-overlay" id="confirm-modal" style="display:none;">
+        <div class="confirm-modal">
+            <div class="confirm-modal-icon"><i class="ri-error-warning-line"></i></div>
+            <h3 id="confirm-title">Are you sure?</h3>
+            <p id="confirm-text">This action cannot be undone.</p>
+            <div class="confirm-modal-actions">
+                <button class="btn btn-outline" id="confirm-cancel">Cancel</button>
+                <button class="btn btn-danger" id="confirm-ok">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Context Menu -->
+    <div class="msg-context-menu" id="msg-context-menu">
+        <button class="ctx-menu-item" id="ctx-reply-msg">
+            <i class="ri-reply-line"></i> Reply
+        </button>
+        <button class="ctx-menu-item ctx-danger" id="ctx-delete-msg">
+            <i class="ri-delete-bin-line"></i> Delete Message
+        </button>
     </div>
 
     <!-- Mobile sidebar overlay -->

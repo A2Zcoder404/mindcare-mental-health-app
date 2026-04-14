@@ -1,8 +1,8 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import {
-    collection, getDocs, doc, getDoc, updateDoc,
-    query, orderBy, serverTimestamp
+    collection, getDocs, doc, getDoc, updateDoc, deleteDoc,
+    query, orderBy, serverTimestamp, onSnapshot
 } from 'firebase/firestore';
 
 // =============================================
@@ -38,6 +38,7 @@ const modalCloseBtn = document.getElementById('modal-close-btn');
 // Data stores
 let allApplications = [];
 let allUsers = [];
+let allFeedback = [];
 let currentFilter = 'all';
 let currentUserFilter = 'all';
 
@@ -95,11 +96,12 @@ onAuthStateChanged(auth, async (user) => {
     } catch (e) { /* ignore */ }
 
     // Load data
-    await Promise.all([loadApplications(), loadUsers()]);
+    await Promise.all([loadApplications(), loadUsers(), loadFeedback()]);
     updateStats();
     renderRecentApps();
     renderApplicationsTable();
     renderUsersTable();
+    renderFeedbackTable();
 
     hideLoader();
 });
@@ -121,7 +123,8 @@ const tabs = document.querySelectorAll('.admin-tab');
 const tabTitles = {
     dashboard: 'Dashboard',
     applications: 'Therapist Applications',
-    users: 'User Management'
+    users: 'User Management',
+    feedback: 'Account Deletion Feedback'
 };
 
 sidebarLinks.forEach(link => {
@@ -171,32 +174,70 @@ sidebarOverlay.addEventListener('click', () => {
 // =============================================
 //  DATA LOADING
 // =============================================
-async function loadApplications() {
-    try {
+function loadApplications() {
+    return new Promise((resolve) => {
         const q = query(collection(db, 'therapistApplications'), orderBy('appliedAt', 'desc'));
-        const snapshot = await getDocs(q);
-        allApplications = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-        console.error('Error loading applications:', e);
-        // Try without ordering if index isn't built
-        try {
-            const snapshot = await getDocs(collection(db, 'therapistApplications'));
+        let initial = true;
+        onSnapshot(q, (snapshot) => {
             allApplications = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        } catch (e2) {
-            console.error('Error loading applications (fallback):', e2);
-            allApplications = [];
-        }
-    }
+            if (!initial) {
+                updateStats();
+                renderRecentApps();
+                renderApplicationsTable(currentFilter, document.getElementById('app-search-input')?.value || '');
+            }
+            if (initial) { initial = false; resolve(); }
+        }, (e) => {
+            console.error('Error loading applications:', e);
+            // Fallback (if index is missing)
+            onSnapshot(collection(db, 'therapistApplications'), (snap) => {
+                allApplications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (!initial) {
+                    updateStats();
+                    renderRecentApps();
+                    renderApplicationsTable(currentFilter, document.getElementById('app-search-input')?.value || '');
+                }
+                if (initial) { initial = false; resolve(); }
+            }, (err) => {
+                console.error('Error loading applications (fallback):', err);
+                allApplications = [];
+                if (initial) { initial = false; resolve(); }
+            });
+        });
+    });
 }
 
-async function loadUsers() {
-    try {
-        const snapshot = await getDocs(collection(db, 'users'));
-        allUsers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-        console.error('Error loading users:', e);
-        allUsers = [];
-    }
+function loadUsers() {
+    return new Promise((resolve) => {
+        let initial = true;
+        onSnapshot(collection(db, 'users'), (snapshot) => {
+            allUsers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (!initial) {
+                updateStats();
+                renderUsersTable(currentUserFilter, document.getElementById('user-search-input')?.value || '');
+            }
+            if (initial) { initial = false; resolve(); }
+        }, (e) => {
+            console.error('Error loading users:', e);
+            allUsers = [];
+            if (initial) { initial = false; resolve(); }
+        });
+    });
+}
+
+function loadFeedback() {
+    return new Promise((resolve) => {
+        let initial = true;
+        onSnapshot(collection(db, 'account_deletion_feedback'), (snapshot) => {
+            allFeedback = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            allFeedback.sort((a, b) => new Date(b.deletedAt || 0) - new Date(a.deletedAt || 0));
+            if (!initial) renderFeedbackTable();
+            if (initial) { initial = false; resolve(); }
+        }, (e) => {
+            console.error('Error loading feedback:', e);
+            allFeedback = [];
+            if (initial) { initial = false; resolve(); }
+        });
+    });
 }
 
 // =============================================
@@ -384,7 +425,7 @@ function renderUsersTable(filter = currentUserFilter, searchTerm = '') {
 
     if (filtered.length === 0) {
         tbody.innerHTML = `
-            <tr><td colspan="5" class="table-loading">
+            <tr><td colspan="6" class="table-loading">
                 <i class="ri-inbox-line" style="animation:none;"></i> No users found
             </td></tr>`;
         return;
@@ -420,8 +461,42 @@ function renderUsersTable(filter = currentUserFilter, searchTerm = '') {
                 <td>${escapeHtml(occupation)}</td>
                 <td>${roleBadge}</td>
                 <td>${joined}</td>
+                <td>
+                    <div class="cell-actions">
+                        <button class="btn btn-reject btn-sm" title="Delete User" data-action="delete" data-id="${user.id}">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    </div>
+                </td>
             </tr>`;
     }).join('');
+    
+    // Attach action handlers for users table
+    tbody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const user = allUsers.find(u => u.id === id);
+            if (user && confirm(`Are you sure you want to delete user ${user.fullName || user.email}? This will remove their database record permanently.`)) {
+                try {
+                    await deleteDoc(doc(db, 'users', id));
+                    // Try to clean up application doc
+                    try {
+                        await deleteDoc(doc(db, 'therapistApplications', id));
+                    } catch (err) { /* ignore */ }
+                    
+                    // Update local state
+                    allUsers = allUsers.filter(u => u.id !== id);
+                    updateStats();
+                    renderUsersTable(currentUserFilter, document.getElementById('user-search-input')?.value || '');
+                    showToast('User deleted successfully');
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    showToast('Failed to delete user. See console.');
+                }
+            }
+        });
+    });
 }
 
 // User filter chips
@@ -437,6 +512,39 @@ document.querySelectorAll('#tab-users .filter-chip').forEach(chip => {
 document.getElementById('user-search-input')?.addEventListener('input', (e) => {
     renderUsersTable(currentUserFilter, e.target.value);
 });
+
+// =============================================
+//  FEEDBACK TABLE
+// =============================================
+function renderFeedbackTable() {
+    const tbody = document.getElementById('feedback-tbody');
+    if (!tbody) return;
+    
+    if (allFeedback.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="3" class="table-loading">
+                <i class="ri-inbox-line" style="animation:none;"></i> No feedback found
+            </td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = allFeedback.map(fb => {
+        const email = fb.email || 'Unknown';
+        const text = fb.feedback ? escapeHtml(fb.feedback) : '<span style="color:var(--text-muted);font-style:italic;">No feedback provided</span>';
+        let date = 'Unknown';
+        if (fb.deletedAt) {
+            const d = new Date(fb.deletedAt);
+            date = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        return `
+            <tr>
+                <td><span class="cell-email">${escapeHtml(email)}</span></td>
+                <td style="white-space: normal; line-height: 1.5; color: var(--text-color);">${text}</td>
+                <td><span style="color:var(--text-muted);font-size:0.85rem;">${date}</span></td>
+            </tr>`;
+    }).join('');
+}
 
 // =============================================
 //  APPLICATION DETAIL MODAL

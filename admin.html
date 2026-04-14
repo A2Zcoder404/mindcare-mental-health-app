@@ -56,6 +56,10 @@
                     <i class="ri-group-line"></i>
                     <span>Users</span>
                 </button>
+                <button class="sidebar-link" data-tab="feedback">
+                    <i class="ri-message-3-line"></i>
+                    <span>Feedback</span>
+                </button>
             </nav>
 
             <div class="sidebar-footer">
@@ -211,12 +215,39 @@
                                 <th>Occupation</th>
                                 <th>Role</th>
                                 <th>Joined</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="users-tbody">
                             <tr>
-                                <td colspan="5" class="table-loading">
+                                <td colspan="6" class="table-loading">
                                     <i class="ri-loader-4-line ri-spin"></i> Loading users...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ===== TAB: Feedback ===== -->
+            <section class="admin-tab" id="tab-feedback">
+                <div class="tab-header" style="padding: 1.5rem 1.5rem 0;">
+                    <h2><i class="ri-message-3-line" style="color:var(--text-muted); margin-right:8px;"></i> Account Deletion Feedback</h2>
+                </div>
+
+                <div class="table-container">
+                    <table class="admin-table" id="feedback-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th style="width: 50%;">Feedback</th>
+                                <th>Date Deleted</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-tbody">
+                            <tr>
+                                <td colspan="3" class="table-loading">
+                                    <i class="ri-loader-4-line ri-spin"></i> Loading feedback...
                                 </td>
                             </tr>
                         </tbody>
